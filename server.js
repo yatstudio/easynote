@@ -8,18 +8,30 @@ const { Pool } = pg;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const port = Number(process.env.PORT || 3000);
-const databaseUrl = process.env.DATABASE_URL;
+const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL;
 
 if (!databaseUrl) {
   console.error('Missing DATABASE_URL. Set it to the Zeabur PostgreSQL connection string.');
   process.exit(1);
 }
 
-const pool = new Pool({ connectionString: databaseUrl });
+const pool = new Pool({
+  connectionString: databaseUrl,
+  ssl: process.env.PGSSLMODE === 'require' ? { rejectUnauthorized: false } : undefined
+});
 const sessions = new Map();
 
 app.use(express.json({ limit: '15mb' }));
 app.use(express.static(__dirname));
+
+app.get('/health', async (req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.json({ ok: true, database: 'connected' });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
 
 function sha256(value) {
   return crypto.createHash('sha256').update(value).digest('hex');
@@ -44,6 +56,7 @@ function sanitizeNote(row) {
 }
 
 async function initDb() {
+  await pool.query('CREATE EXTENSION IF NOT EXISTS pgcrypto;');
   await pool.query(`
     CREATE TABLE IF NOT EXISTS vaults (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

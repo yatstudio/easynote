@@ -1,6 +1,8 @@
-# EasyNote
+# LockerNote
 
-无需注册登录的 Web 版密码备忘录。用户只需要输入一个“保险箱密码”即可打开自己的备忘录空间；不再需要保险箱编号。
+你的备忘录保险箱。
+
+不用注册，只用密码打开。文字、图片、链接，都能放进自己的私人空间。
 
 ## 当前实现
 
@@ -8,6 +10,7 @@
 - 数据写入 PostgreSQL 数据库
 - Express 后端 API
 - PostgreSQL 表自动初始化
+- Zeabur / Docker 部署支持
 - 自动锁定
 - 备忘录新建、编辑、搜索、置顶、删除、恢复、永久删除
 - 富文本编辑
@@ -36,14 +39,21 @@ npm start
 http://localhost:3000
 ```
 
-## 环境变量
+健康检查：
 
-参考 `env.example`。
+```txt
+http://localhost:3000/health
+```
+
+## Zeabur 部署
+
+需要配置环境变量：
 
 ```env
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE"
-PORT=3000
 ```
+
+如 Zeabur 注入的是 `POSTGRES_URL` 或 `POSTGRES_PRISMA_URL`，服务端也会自动读取。
 
 ## 注意
 
