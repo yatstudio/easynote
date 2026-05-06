@@ -1,26 +1,51 @@
 # EasyNote
 
-无需注册登录的 Web 版保险箱备忘录原型。
+无需注册登录的 Web 版密码备忘录。用户只需要输入一个“保险箱密码”即可打开自己的备忘录空间；不再需要保险箱编号。
 
-## 功能
+## 当前实现
 
-- 创建 / 打开 / 锁定 / 删除保险箱
-- 密码 SHA-256 哈希后保存在本地浏览器
+- 仅密码打开 / 创建保险箱
+- 数据写入 PostgreSQL 数据库
+- Express 后端 API
+- PostgreSQL 表自动初始化
 - 自动锁定
 - 备忘录新建、编辑、搜索、置顶、删除、恢复、永久删除
 - 富文本编辑
-- 图片上传、链接卡片、附件占位
-- localStorage 本地保存
-- JSON 导出
+- 图片以 Base64 形式写入备忘录 HTML
+- 链接卡片、附件元数据块
+- JSON 导出数据库内容
 
-## 使用
+## 本地运行
 
-直接用浏览器打开：
+安装依赖：
 
 ```bash
-open index.html
+npm install
 ```
 
-或双击 `index.html`。
+配置环境变量：
 
-> 这是前端本地原型，数据保存在当前浏览器 localStorage 中。
+```bash
+export DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE"
+npm start
+```
+
+然后打开：
+
+```txt
+http://localhost:3000
+```
+
+## 环境变量
+
+参考 `env.example`。
+
+```env
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE"
+PORT=3000
+```
+
+## 注意
+
+- 不要把真实数据库连接字符串提交到 GitHub。
+- 这是单密码保险箱模型；相同密码会进入同一个保险箱。
