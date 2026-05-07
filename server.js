@@ -8,26 +8,38 @@ const { Pool } = pg;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const port = Number(process.env.PORT || 3000);
-const databaseUrl = process.env.DATABASE_URL
-  || process.env.POSTGRES_URL
-  || process.env.POSTGRES_PRISMA_URL
-  || process.env.POSTGRES_CONNECTION_STRING
-  || process.env.POSTGRES_URI
-  || process.env.PG_URL;
-const hasPgEnv = process.env.PGHOST && process.env.PGUSER && process.env.PGPASSWORD && process.env.PGDATABASE;
+const pickEnv = (...names) => names.map(name => process.env[name]).find(Boolean);
+const databaseUrl = pickEnv(
+  'DATABASE_URL',
+  'POSTGRES_URL',
+  'POSTGRES_PRISMA_URL',
+  'POSTGRES_CONNECTION_STRING',
+  'POSTGRES_CONNECTION_URL',
+  'POSTGRES_URI',
+  'POSTGRESQL_URL',
+  'POSTGRESQL_URI',
+  'POSTGRESQL_DATABASE_URL',
+  'ZEABUR_POSTGRESQL_URL',
+  'ZEABUR_POSTGRESQL_CONNECTION_STRING',
+  'PG_URL'
+);
+const pgHost = pickEnv('PGHOST', 'POSTGRES_HOST', 'POSTGRESQL_HOST', 'DB_HOST');
+const pgPort = pickEnv('PGPORT', 'POSTGRES_PORT', 'POSTGRESQL_PORT', 'DB_PORT') || 5432;
+const pgUser = pickEnv('PGUSER', 'POSTGRES_USER', 'POSTGRES_USERNAME', 'POSTGRESQL_USER', 'POSTGRESQL_USERNAME', 'DB_USER', 'DB_USERNAME');
+const pgPassword = pickEnv('PGPASSWORD', 'POSTGRES_PASSWORD', 'POSTGRESQL_PASSWORD', 'DB_PASSWORD');
+const pgDatabase = pickEnv('PGDATABASE', 'POSTGRES_DATABASE', 'POSTGRES_DB', 'POSTGRESQL_DATABASE', 'POSTGRESQL_DB', 'DB_DATABASE', 'DB_NAME');
+const hasPgEnv = pgHost && pgUser && pgPassword && pgDatabase;
+const sslConfig = pickEnv('PGSSLMODE', 'POSTGRES_SSLMODE') === 'require' ? { rejectUnauthorized: false } : undefined;
 const pool = databaseUrl
-  ? new Pool({
-      connectionString: databaseUrl,
-      ssl: process.env.PGSSLMODE === 'require' ? { rejectUnauthorized: false } : undefined
-    })
+  ? new Pool({ connectionString: databaseUrl, ssl: sslConfig })
   : hasPgEnv
     ? new Pool({
-        host: process.env.PGHOST,
-        port: Number(process.env.PGPORT || 5432),
-        user: process.env.PGUSER,
-        password: process.env.PGPASSWORD,
-        database: process.env.PGDATABASE,
-        ssl: process.env.PGSSLMODE === 'require' ? { rejectUnauthorized: false } : undefined
+        host: pgHost,
+        port: Number(pgPort),
+        user: pgUser,
+        password: pgPassword,
+        database: pgDatabase,
+        ssl: sslConfig
       })
     : null;
 
@@ -240,7 +252,7 @@ process.on('unhandledRejection', error => console.error('Unhandled rejection:', 
 process.on('uncaughtException', error => console.error('Uncaught exception:', error));
 
 app.listen(port, '0.0.0.0', () => {
-  const dbSource = databaseUrl ? 'connection_string' : hasPgEnv ? 'pg_env' : 'missing';
+  const dbSource = databaseUrl ? 'connection_string' : hasPgEnv ? 'split_pg_env' : 'missing';
   console.log(`LockerNote running on 0.0.0.0:${port}; database=${dbSource}`);
   ensureDb().catch(error => {
     dbReady = false;
