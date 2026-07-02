@@ -47,6 +47,66 @@ const sessions = new Map();
 let dbReady = false;
 let dbInitError = null;
 
+// Rate limiting for brute-force protection
+const rateLimitStore = new Map();
+const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
+const MAX_ATTEMPTS = 5; // Max password attempts per IP per window
+
+function getClientIp(req) {
+  return req.headers['x-forwarded-for']?.split(',')[0].trim() ||
+         req.headers['x-real-ip'] ||
+         req.connection?.remoteAddress ||
+         req.socket?.remoteAddress ||
+         'unknown';
+}
+
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const record = rateLimitStore.get(ip);
+
+  if (!record) {
+    rateLimitStore.set(ip, { attempts: 1, firstAttempt: now, blockedUntil: null });
+    return { allowed: true, remainingAttempts: MAX_ATTEMPTS - 1 };
+  }
+
+  // Check if still blocked
+  if (record.blockedUntil && now < record.blockedUntil) {
+    const waitSeconds = Math.ceil((record.blockedUntil - now) / 1000);
+    return { allowed: false, remainingAttempts: 0, waitSeconds };
+  }
+
+  // Reset if window expired
+  if (now - record.firstAttempt > RATE_LIMIT_WINDOW) {
+    rateLimitStore.set(ip, { attempts: 1, firstAttempt: now, blockedUntil: null });
+    return { allowed: true, remainingAttempts: MAX_ATTEMPTS - 1 };
+  }
+
+  // Increment attempts
+  record.attempts++;
+
+  if (record.attempts > MAX_ATTEMPTS) {
+    record.blockedUntil = now + RATE_LIMIT_WINDOW;
+    const waitSeconds = Math.ceil(RATE_LIMIT_WINDOW / 1000);
+    return { allowed: false, remainingAttempts: 0, waitSeconds };
+  }
+
+  return { allowed: true, remainingAttempts: MAX_ATTEMPTS - record.attempts };
+}
+
+function resetRateLimit(ip) {
+  rateLimitStore.delete(ip);
+}
+
+// Clean up old rate limit records every hour
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, record] of rateLimitStore.entries()) {
+    if (now - record.firstAttempt > RATE_LIMIT_WINDOW && (!record.blockedUntil || now > record.blockedUntil)) {
+      rateLimitStore.delete(ip);
+    }
+  }
+}, 60 * 60 * 1000);
+
 app.use(express.json({ limit: '15mb' }));
 app.use(express.static(__dirname));
 
@@ -141,6 +201,17 @@ async function initDb() {
 app.post('/api/vault/open', requireDb, asyncRoute(async (req, res) => {
   await ensureDb();
 
+  const clientIp = getClientIp(req);
+  const rateCheck = checkRateLimit(clientIp);
+
+  if (!rateCheck.allowed) {
+    return res.status(429).json({
+      error: 'rate_limit_exceeded',
+      message: 'Too many password attempts. Please try again later.',
+      waitSeconds: rateCheck.waitSeconds
+    });
+  }
+
   const password = String(req.body.password || '');
   if (password.length < 4) return res.status(400).json({ error: 'password_too_short' });
 
@@ -175,6 +246,10 @@ app.post('/api/vault/open', requireDb, asyncRoute(async (req, res) => {
 
   const sessionToken = token();
   sessions.set(sessionToken, { vaultId: vault.id, createdAt: Date.now() });
+
+  // Reset rate limit on successful authentication
+  resetRateLimit(clientIp);
+
   res.json({ token: sessionToken, vault: { id: vault.id, settings: vault.settings } });
 }));
 

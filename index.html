@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LockerNote · 你的备忘录保险箱</title>
+  <title>LockerNote · Your Note Vault</title>
   <style>
     :root{--bg:#f5f5f7;--text:#1d1d1f;--muted:#6e6e73;--line:rgba(0,0,0,.08);--yellow:#ffd60a;--blue:#007aff;--green:#34c759;--red:#ff3b30;--shadow:0 24px 60px rgba(0,0,0,.12)}
     *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 16% 8%,rgba(255,214,10,.32),transparent 28%),radial-gradient(circle at 92% 6%,rgba(0,122,255,.14),transparent 32%),linear-gradient(135deg,#fbfbfd,#f5f5f7);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Helvetica Neue",Arial,sans-serif}button,input,select{font:inherit}button{border:0;cursor:pointer}.hidden{display:none!important}
@@ -17,26 +17,315 @@
   </style>
 </head>
 <body>
-  <main class="app"><aside class="side"><div class="brand"><div class="logo">🔐</div><div><h1>LockerNote</h1><p>你的备忘录保险箱</p></div></div><div class="vault"><small>当前访问方式</small><strong>仅使用保险箱密码</strong><div class="status"><span class="dot"></span><span id="lockStatus">未打开</span></div></div><section class="section"><div class="section-title">备忘录</div><button class="nav active" data-filter="all"><span>📝 所有备忘录</span><span class="count" id="countAll">0</span></button><button class="nav" data-filter="pinned"><span>📌 已置顶</span><span class="count" id="countPinned">0</span></button><button class="nav" data-filter="recent"><span>🕘 最近编辑</span><span class="count" id="countRecent">0</span></button><button class="nav" data-filter="images"><span>🖼️ 含图片</span><span class="count" id="countImages">0</span></button><button class="nav" data-filter="links"><span>🔗 含链接</span><span class="count" id="countLinks">0</span></button></section><section class="section"><div class="section-title">保险箱</div><button class="nav" data-filter="trash"><span>🗑️ 废纸篓</span><span class="count" id="countTrash">0</span></button><button class="nav" id="settingsBtn"><span>⚙️ 设置</span><span></span></button></section><div class="actions"><button class="black" id="lockBtn">锁定保险箱</button><button class="secondary" id="exportBtn">导出数据</button><button class="danger" id="deleteVaultBtn">删除保险箱</button></div></aside><section class="list"><div class="list-head"><div class="head-row"><h2 id="listTitle">备忘录</h2><button class="new" id="newBtn">+</button></div><input class="search" id="search" placeholder="搜索标题、正文、链接、图片说明" /></div><div class="notes" id="notes"></div></section><section class="editor" id="editor"><div class="placeholder">输入密码打开保险箱</div></section></main>
-  <section class="entry" id="entry"><div class="entry-card"><h2>LockerNote</h2><p><strong>你的备忘录保险箱</strong></p><p>不用注册，只用密码打开。文字、图片、链接，都能放进自己的私人空间。</p><div class="field"><label>保险箱密码</label><input id="password" type="password" placeholder="输入你的保险箱密码" autofocus /></div><p class="hint">数据保存到后端 PostgreSQL 数据库；请牢记密码，无法找回。</p><div class="form-actions"><button class="primary" id="openVaultBtn">打开 / 创建保险箱</button></div></div></section>
+  <main class="app"><aside class="side"><div class="brand"><div class="logo">🔐</div><div><h1>LockerNote</h1><p id="brandDesc"></p></div></div><div class="vault"><small id="vaultAccess"></small><strong id="passwordOnly"></strong><div class="status"><span class="dot"></span><span id="lockStatus"></span></div></div><section class="section"><div class="section-title" id="notesSectionTitle"></div><button class="nav active" data-filter="all"><span id="navAllNotes"></span><span class="count" id="countAll">0</span></button><button class="nav" data-filter="pinned"><span id="navPinned"></span><span class="count" id="countPinned">0</span></button><button class="nav" data-filter="recent"><span id="navRecent"></span><span class="count" id="countRecent">0</span></button><button class="nav" data-filter="images"><span id="navImages"></span><span class="count" id="countImages">0</span></button><button class="nav" data-filter="links"><span id="navLinks"></span><span class="count" id="countLinks">0</span></button></section><section class="section"><div class="section-title" id="vaultSectionTitle"></div><button class="nav" data-filter="trash"><span id="navTrash"></span><span class="count" id="countTrash">0</span></button><button class="nav" id="settingsBtn"><span id="navSettings"></span><span></span></button></section><div class="actions"><button class="black" id="lockBtn"></button><button class="secondary" id="exportBtn"></button><button class="danger" id="deleteVaultBtn"></button></div></aside><section class="list"><div class="list-head"><div class="head-row"><h2 id="listTitle"></h2><button class="new" id="newBtn">+</button></div><input class="search" id="search" placeholder="" /></div><div class="notes" id="notes"></div></section><section class="editor" id="editor"><div class="placeholder" id="editorPlaceholder"></div></section></main>
+  <section class="entry" id="entry"><div class="entry-card"><h2 id="entryTitle"></h2><p><strong id="entryTagline"></strong></p><p id="entryDesc"></p><div class="field"><label id="passwordLabel"></label><input id="password" type="password" placeholder="" autofocus /></div><p class="hint" id="passwordHint"></p><div class="form-actions"><button class="primary" id="openVaultBtn"></button></div></div></section>
   <input id="imageInput" class="upload" type="file" accept="image/*" multiple /><input id="fileInput" class="upload" type="file" multiple />
-  <div class="modal-backdrop" id="modal"><div class="modal"><h3 id="modalTitle">提示</h3><p id="modalText"></p><div id="modalExtra"></div><div class="modal-row"><button class="secondary" id="modalCancel">取消</button><button class="primary" id="modalOk">确定</button></div></div></div><div class="toast" id="toast">完成</div>
+  <div class="modal-backdrop" id="modal"><div class="modal"><h3 id="modalTitle"></h3><p id="modalText"></p><div id="modalExtra"></div><div class="modal-row"><button class="secondary" id="modalCancel"></button><button class="primary" id="modalOk"></button></div></div></div><div class="toast" id="toast"></div>
 <script>
+// Internationalization (i18n) - Auto-detect browser language
+const i18n = {
+  'en': {
+    appTitle: 'LockerNote · Your Note Vault',
+    tagline: 'Your Note Vault',
+    brandDesc: 'Your note vault',
+    vaultAccess: 'Current Access',
+    passwordOnly: 'Password Only',
+    lockStatus: 'Locked',
+    unlockStatus: 'Unlocked',
+    allNotes: '📝 All Notes',
+    pinned: '📌 Pinned',
+    recent: '🕘 Recent',
+    images: '🖼️ With Images',
+    links: '🔗 With Links',
+    trash: '🗑️ Trash',
+    settings: '⚙️ Settings',
+    lockVault: 'Lock Vault',
+    exportData: 'Export Data',
+    deleteVault: 'Delete Vault',
+    notesTitle: 'Notes',
+    newNote: '+',
+    searchPlaceholder: 'Search title, content, links, images...',
+    placeholder: 'Enter password to unlock vault',
+    entryTitle: 'LockerNote',
+    entryTagline: 'Your Note Vault',
+    entryDesc: 'No registration required. Just a password to unlock. Store text, images, links in your private space.',
+    passwordLabel: 'Vault Password',
+    passwordPlaceholder: 'Enter your vault password',
+    passwordHint: 'Data is stored in PostgreSQL database. Remember your password - it cannot be recovered.',
+    openVaultBtn: 'Open / Create Vault',
+    cancel: 'Cancel',
+    confirm: 'Confirm',
+    done: 'Done',
+    newNoteTitle: 'New Note',
+    newNoteContent: '<p>Start typing, or insert images, links, files, checklists.</p>',
+    welcomeTitle: 'Welcome to LockerNote',
+    welcomeContent: '<p>Only a password is needed to enter. Your note data is saved to PostgreSQL database.</p><div class="media-block link-card"><div class="favicon">🔗</div><div><b>Link Card Example</b><br><small>Paste a link to save it as a rich media block</small></div></div>',
+    shoppingTitle: 'Shopping List',
+    shoppingContent: '<ul><li>Coffee beans</li><li>Milk</li><li>USB-C cable</li></ul>',
+    settingsTitle: 'Vault Settings',
+    settingsDesc: 'Change auto-lock timeout.',
+    autoLockNever: 'Never',
+    autoLockMinutes: 'minutes',
+    settingsSaved: 'Settings saved to database',
+    dataExported: 'Data exported',
+    deleteVaultTitle: 'Delete Vault',
+    deleteVaultDesc: 'Confirm deletion of all data for this password?',
+    vaultDeleted: 'Vault deleted',
+    saved: 'Saved',
+    fileMetadata: 'File metadata saved to database',
+    errors: {
+      database_not_configured: 'Server database not configured. Please bind PostgreSQL and set DATABASE_URL on your deployment platform.',
+      password_too_short: 'Password must be at least 4 characters',
+      locked: 'Vault is locked. Please re-enter password.',
+      rate_limit_exceeded: 'Too many password attempts. Please try again later.',
+      server_error: 'Server error. Please try again.',
+      network_error: 'Network error. Please check your connection.'
+    }
+  },
+  'zh-CN': {
+    appTitle: 'LockerNote · 你的备忘录保险箱',
+    tagline: '你的备忘录保险箱',
+    brandDesc: '你的备忘录保险箱',
+    vaultAccess: '当前访问方式',
+    passwordOnly: '仅使用保险箱密码',
+    lockStatus: '未打开',
+    unlockStatus: '已打开',
+    allNotes: '📝 所有备忘录',
+    pinned: '📌 已置顶',
+    recent: '🕘 最近编辑',
+    images: '🖼️ 含图片',
+    links: '🔗 含链接',
+    trash: '🗑️ 废纸篓',
+    settings: '⚙️ 设置',
+    lockVault: '锁定保险箱',
+    exportData: '导出数据',
+    deleteVault: '删除保险箱',
+    notesTitle: '备忘录',
+    newNote: '+',
+    searchPlaceholder: '搜索标题、正文、链接、图片说明',
+    placeholder: '输入密码打开保险箱',
+    entryTitle: 'LockerNote',
+    entryTagline: '你的备忘录保险箱',
+    entryDesc: '不用注册，只用密码打开。文字、图片、链接，都能放进自己的私人空间。',
+    passwordLabel: '保险箱密码',
+    passwordPlaceholder: '输入你的保险箱密码',
+    passwordHint: '数据保存到后端 PostgreSQL 数据库；请牢记密码，无法找回。',
+    openVaultBtn: '打开 / 创建保险箱',
+    cancel: '取消',
+    confirm: '确定',
+    done: '完成',
+    newNoteTitle: '新备忘录',
+    newNoteContent: '<p>开始记录文字，或插入图片、链接、附件、待办清单。</p>',
+    welcomeTitle: '欢迎使用 LockerNote',
+    welcomeContent: '<p>这里只需要密码即可进入。你的备忘录数据会保存到 PostgreSQL 数据库。</p><div class="media-block link-card"><div class="favicon">🔗</div><div><b>链接卡片示例</b><br><small>粘贴链接后可以保存为富媒体块</small></div></div>',
+    shoppingTitle: '购物清单',
+    shoppingContent: '<ul><li>咖啡豆</li><li>牛奶</li><li>USB-C 线</li></ul>',
+    settingsTitle: '保险箱设置',
+    settingsDesc: '修改自动锁定时间。',
+    autoLockNever: '永不',
+    autoLockMinutes: '分钟',
+    settingsSaved: '设置已保存到数据库',
+    dataExported: '已导出数据库数据',
+    deleteVaultTitle: '删除保险箱',
+    deleteVaultDesc: '确认删除当前密码对应的所有数据库内容？',
+    vaultDeleted: '保险箱已删除',
+    saved: '已保存',
+    fileMetadata: '文件元数据保存到数据库',
+    errors: {
+      database_not_configured: '服务器数据库还没配置，请在部署平台绑定 PostgreSQL 并设置 DATABASE_URL。',
+      password_too_short: '密码至少 4 位',
+      locked: '保险箱已锁定，请重新输入密码',
+      rate_limit_exceeded: '密码尝试次数过多，请稍后再试。',
+      server_error: '服务器错误，请重试',
+      network_error: '网络错误，请检查连接'
+    }
+  },
+  'zh-TW': {
+    appTitle: 'LockerNote · 你的備忘錄保險箱',
+    tagline: '你的備忘錄保險箱',
+    brandDesc: '你的備忘錄保險箱',
+    vaultAccess: '當前訪問方式',
+    passwordOnly: '僅使用保險箱密碼',
+    lockStatus: '未打開',
+    unlockStatus: '已打開',
+    allNotes: '📝 所有備忘錄',
+    pinned: '📌 已置頂',
+    recent: '🕘 最近編輯',
+    images: '🖼️ 含圖片',
+    links: '🔗 含連結',
+    trash: '🗑️ 廢紙簍',
+    settings: '⚙️ 設置',
+    lockVault: '鎖定保險箱',
+    exportData: '導出數據',
+    deleteVault: '刪除保險箱',
+    notesTitle: '備忘錄',
+    newNote: '+',
+    searchPlaceholder: '搜索標題、正文、連結、圖片說明',
+    placeholder: '輸入密碼打開保險箱',
+    entryTitle: 'LockerNote',
+    entryTagline: '你的備忘錄保險箱',
+    entryDesc: '不用註冊，只用密碼打開。文字、圖片、連結，都能放進自己的私人空間。',
+    passwordLabel: '保險箱密碼',
+    passwordPlaceholder: '輸入你的保險箱密碼',
+    passwordHint: '數據保存到後端 PostgreSQL 數據庫；請牢記密碼，無法找回。',
+    openVaultBtn: '打開 / 創建保險箱',
+    cancel: '取消',
+    confirm: '確定',
+    done: '完成',
+    newNoteTitle: '新備忘錄',
+    newNoteContent: '<p>開始記錄文字，或插入圖片、連結、附件、待辦清單。</p>',
+    welcomeTitle: '歡迎使用 LockerNote',
+    welcomeContent: '<p>這裡只需要密碼即可進入。你的備忘錄數據會保存到 PostgreSQL 數據庫。</p><div class="media-block link-card"><div class="favicon">🔗</div><div><b>連結卡片示例</b><br><small>粘貼連結後可以保存為富媒體塊</small></div></div>',
+    shoppingTitle: '購物清單',
+    shoppingContent: '<ul><li>咖啡豆</li><li>牛奶</li><li>USB-C 線</li></ul>',
+    settingsTitle: '保險箱設置',
+    settingsDesc: '修改自動鎖定時間。',
+    autoLockNever: '永不',
+    autoLockMinutes: '分鐘',
+    settingsSaved: '設置已保存到數據庫',
+    dataExported: '已導出數據庫數據',
+    deleteVaultTitle: '刪除保險箱',
+    deleteVaultDesc: '確認刪除當前密碼對應的所有數據庫內容？',
+    vaultDeleted: '保險箱已刪除',
+    saved: '已保存',
+    fileMetadata: '文件元數據保存到數據庫',
+    errors: {
+      database_not_configured: '服務器數據庫還沒配置，請在部署平台綁定 PostgreSQL 並設置 DATABASE_URL。',
+      password_too_short: '密碼至少 4 位',
+      locked: '保險箱已鎖定，請重新輸入密碼',
+      rate_limit_exceeded: '密碼嘗試次數過多，請稍後再試。',
+      server_error: '服務器錯誤，請重試',
+      network_error: '網絡錯誤，請檢查連接'
+    }
+  },
+  'ja': {
+    appTitle: 'LockerNote · あなたのメモ金庫',
+    tagline: 'あなたのメモ金庫',
+    brandDesc: 'あなたのメモ金庫',
+    vaultAccess: '現在のアクセス方法',
+    passwordOnly: 'パスワードのみ',
+    lockStatus: 'ロック中',
+    unlockStatus: 'ロック解除',
+    allNotes: '📝 すべてのメモ',
+    pinned: '📌 ピン留め',
+    recent: '🕘 最近編集',
+    images: '🖼️ 画像あり',
+    links: '🔗 リンクあり',
+    trash: '🗑️ ゴミ箱',
+    settings: '⚙️ 設定',
+    lockVault: '金庫をロック',
+    exportData: 'データをエクスポート',
+    deleteVault: '金庫を削除',
+    notesTitle: 'メモ',
+    newNote: '+',
+    searchPlaceholder: 'タイトル、本文、リンク、画像を検索',
+    placeholder: 'パスワードを入力して金庫を開く',
+    entryTitle: 'LockerNote',
+    entryTagline: 'あなたのメモ金庫',
+    entryDesc: '登録不要。パスワードだけで開きます。テキスト、画像、リンクをあなたのプライベートスペースに保存できます。',
+    passwordLabel: '金庫パスワード',
+    passwordPlaceholder: '金庫のパスワードを入力',
+    passwordHint: 'データはPostgreSQLデータベースに保存されます。パスワードを忘れないでください。',
+    openVaultBtn: '金庫を開く / 作成',
+    cancel: 'キャンセル',
+    confirm: '確認',
+    done: '完了',
+    newNoteTitle: '新しいメモ',
+    newNoteContent: '<p>入力を開始するか、画像、リンク、ファイル、チェックリストを挿入します。</p>',
+    welcomeTitle: 'LockerNoteへようこそ',
+    welcomeContent: '<p>パスワードだけで入れます。メモデータはPostgreSQLデータベースに保存されます。</p><div class="media-block link-card"><div class="favicon">🔗</div><div><b>リンクカードの例</b><br><small>リンクを貼り付けてリッチメディアブロックとして保存</small></div></div>',
+    shoppingTitle: '買い物リスト',
+    shoppingContent: '<ul><li>コーヒー豆</li><li>牛乳</li><li>USB-Cケーブル</li></ul>',
+    settingsTitle: '金庫設定',
+    settingsDesc: '自動ロックタイムアウトを変更します。',
+    autoLockNever: 'なし',
+    autoLockMinutes: '分',
+    settingsSaved: '設定がデータベースに保存されました',
+    dataExported: 'データをエクスポートしました',
+    deleteVaultTitle: '金庫を削除',
+    deleteVaultDesc: 'このパスワードのすべてのデータを削除しますか？',
+    vaultDeleted: '金庫を削除しました',
+    saved: '保存しました',
+    fileMetadata: 'ファイルメタデータがデータベースに保存されました',
+    errors: {
+      database_not_configured: 'サーバーデータベースが構成されていません。デプロイメントプラットフォームでPostgreSQLをバインドし、DATABASE_URLを設定してください。',
+      password_too_short: 'パスワードは4文字以上である必要があります',
+      locked: '金庫がロックされています。パスワードを再入力してください。',
+      rate_limit_exceeded: 'パスワード試行回数が多すぎます。後でもう一度お試しください。',
+      server_error: 'サーバーエラー。もう一度お試しください。',
+      network_error: 'ネットワークエラー。接続を確認してください。'
+    }
+  }
+};
+
+// Detect browser language
+function detectLanguage() {
+  const browserLang = navigator.language || navigator.userLanguage || 'en';
+  if (browserLang.startsWith('zh')) {
+    if (browserLang.includes('TW') || browserLang.includes('HK') || browserLang.includes('Hant')) {
+      return 'zh-TW';
+    }
+    return 'zh-CN';
+  }
+  if (browserLang.startsWith('ja')) return 'ja';
+  return 'en';
+}
+
+const currentLang = detectLanguage();
+const t = i18n[currentLang] || i18n['en'];
+
+// Update page title and lang attribute
+document.title = t.appTitle;
+document.documentElement.lang = currentLang;
+
 let token=sessionStorage.getItem('lockernote.token')||sessionStorage.getItem('easynote.token')||'', notes=[], currentNoteId=null, filter='all', saveTimer=null, autoLockTimer=null, settings={autoLock:15,theme:'system'};
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s)); const notesEl=$('#notes'), editor=$('#editor'), entry=$('#entry'), toast=$('#toast');
-function now(){return new Date().toISOString()} function timeLabel(iso){const d=new Date(iso);return d.toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})} function escapeHtml(s=''){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))} function msg(t){toast.textContent=t;toast.classList.add('show');clearTimeout(msg.t);msg.t=setTimeout(()=>toast.classList.remove('show'),1700)}
-function errorText(code){return {database_not_configured:'服务器数据库还没配置，请在部署平台绑定 PostgreSQL 并设置 DATABASE_URL。',password_too_short:'密码至少 4 位',locked:'保险箱已锁定，请重新输入密码',server_error:'服务器出错，请稍后重试'}[code]||code}
+
+// Initialize UI text with translations
+function initI18n() {
+  $('#brandDesc').textContent = t.brandDesc;
+  $('#vaultAccess').textContent = t.vaultAccess;
+  $('#passwordOnly').textContent = t.passwordOnly;
+  $('#lockStatus').textContent = t.lockStatus;
+  $('#notesSectionTitle').textContent = t.notesTitle;
+  $('#navAllNotes').textContent = t.allNotes;
+  $('#navPinned').textContent = t.pinned;
+  $('#navRecent').textContent = t.recent;
+  $('#navImages').textContent = t.images;
+  $('#navLinks').textContent = t.links;
+  $('#vaultSectionTitle').textContent = t.notesTitle;
+  $('#navTrash').textContent = t.trash;
+  $('#navSettings').textContent = t.settings;
+  $('#lockBtn').textContent = t.lockVault;
+  $('#exportBtn').textContent = t.exportData;
+  $('#deleteVaultBtn').textContent = t.deleteVault;
+  $('#listTitle').textContent = t.notesTitle;
+  $('#search').placeholder = t.searchPlaceholder;
+  $('#editorPlaceholder').textContent = t.placeholder;
+  $('#entryTitle').textContent = t.entryTitle;
+  $('#entryTagline').textContent = t.entryTagline;
+  $('#entryDesc').textContent = t.entryDesc;
+  $('#passwordLabel').textContent = t.passwordLabel;
+  $('#password').placeholder = t.passwordPlaceholder;
+  $('#passwordHint').textContent = t.passwordHint;
+  $('#openVaultBtn').textContent = t.openVaultBtn;
+  $('#modalCancel').textContent = t.cancel;
+  $('#modalOk').textContent = t.confirm;
+}
+
+function now(){return new Date().toISOString()} function timeLabel(iso){const d=new Date(iso);const locale=currentLang==='ja'?'ja-JP':currentLang==='zh-TW'?'zh-TW':currentLang==='zh-CN'?'zh-CN':'en-US';return d.toLocaleString(locale,{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})} function escapeHtml(s=''){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))} function msg(txt){toast.textContent=txt;toast.classList.add('show');clearTimeout(msg.t);msg.t=setTimeout(()=>toast.classList.remove('show'),1700)}
+function errorText(code){return t.errors[code]||t.errors.server_error}
 async function api(path, options={}){const res=await fetch(path,{...options,headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{}),...(options.headers||{})}});if(!res.ok){const data=await res.json().catch(()=>({error:res.statusText}));throw new Error(errorText(data.error||data.detail||res.statusText))}return res.json()}
 function modal(title,text,extra='',ok=()=>{},danger=false){$('#modalTitle').textContent=title;$('#modalText').textContent=text;$('#modalExtra').innerHTML=extra;$('#modalOk').className=danger?'danger':'primary';$('#modal').classList.add('show');$('#modalOk').onclick=()=>{$('#modal').classList.remove('show');ok()};$('#modalCancel').onclick=()=>$('#modal').classList.remove('show')}
-async function openVault(){const password=$('#password').value;if(password.length<4)return msg('密码至少 4 位');try{const data=await api('/api/vault/open',{method:'POST',body:JSON.stringify({password})});token=data.token;settings=data.vault.settings||settings;sessionStorage.setItem('lockernote.token',token);entry.classList.add('hidden');await loadNotes();resetAutoLock();msg('保险箱已打开')}catch(e){msg('打开失败：'+e.message)}}
+async function openVault(){const password=$('#password').value;if(password.length<4)return msg(t.errors.password_too_short);try{const data=await api('/api/vault/open',{method:'POST',body:JSON.stringify({password})});token=data.token;settings=data.vault.settings||settings;sessionStorage.setItem('lockernote.token',token);entry.classList.add('hidden');await loadNotes();resetAutoLock();msg(t.unlockStatus)}catch(e){msg(errorText(e.message))}}
 async function loadNotes(){const data=await api('/api/notes');notes=data.notes;currentNoteId=(notes.find(n=>!n.deleted)||notes[0]||{}).id||null;render()}
-async function lock(){try{if(token)await api('/api/vault/lock',{method:'POST'})}catch{} token='';sessionStorage.removeItem('lockernote.token');sessionStorage.removeItem('easynote.token');entry.classList.remove('hidden');editor.innerHTML='<div class="placeholder">保险箱已锁定</div>';$('#lockStatus').textContent='未打开';msg('已锁定')}
+async function lock(){try{if(token)await api('/api/vault/lock',{method:'POST'})}catch{} token='';sessionStorage.removeItem('lockernote.token');sessionStorage.removeItem('easynote.token');entry.classList.remove('hidden');editor.innerHTML=`<div class="placeholder">${t.lockStatus}</div>`;$('#lockStatus').textContent=t.lockStatus;msg(t.lockStatus)}
 function resetAutoLock(){clearTimeout(autoLockTimer);if(settings.autoLock)autoLockTimer=setTimeout(lock,settings.autoLock*60*1000)} ['click','keydown','input','mousemove'].forEach(e=>document.addEventListener(e,()=>token&&resetAutoLock(),{passive:true}));
 function filtered(){const q=$('#search').value.trim().toLowerCase();let arr=notes.filter(n=>filter==='trash'?n.deleted:!n.deleted);if(filter==='pinned')arr=arr.filter(n=>n.pinned);if(filter==='images')arr=arr.filter(n=>n.media?.images);if(filter==='links')arr=arr.filter(n=>n.media?.links);if(q)arr=arr.filter(n=>(n.title+n.plain).toLowerCase().includes(q));return arr.sort((a,b)=>(b.pinned-a.pinned)||new Date(b.updatedAt)-new Date(a.updatedAt))}
-function render(){const alive=notes.filter(n=>!n.deleted), trash=notes.filter(n=>n.deleted);$('#lockStatus').textContent='已解锁 · '+(settings.autoLock?settings.autoLock+' 分钟自动锁定':'不自动锁定');$('#countAll').textContent=alive.length;$('#countPinned').textContent=alive.filter(n=>n.pinned).length;$('#countRecent').textContent=alive.length;$('#countImages').textContent=alive.filter(n=>n.media?.images).length;$('#countLinks').textContent=alive.filter(n=>n.media?.links).length;$('#countTrash').textContent=trash.length;$('#listTitle').textContent={all:'备忘录',pinned:'已置顶',recent:'最近编辑',images:'含图片',links:'含链接',trash:'废纸篓'}[filter];renderList();renderEditor()}
-function renderList(){const arr=filtered();notesEl.innerHTML=arr.length?arr.map(n=>`<article class="note ${n.id===currentNoteId?'active':''}" data-id="${n.id}"><h3>${n.pinned?'📌 ':''}${escapeHtml(n.title||'新备忘录')}</h3><p>${escapeHtml((n.plain||'').slice(0,52))||'无内容'}</p><div class="meta"><span>${timeLabel(n.updatedAt)}</span><span class="chips">${n.media?.images?'<b class="chip">🖼️</b>':''}${n.media?.links?'<b class="chip">🔗</b>':''}${n.media?.files?'<b class="chip">📎</b>':''}</span></div></article>`).join(''):'<div class="empty">没有备忘录</div>'}
+function render(){const alive=notes.filter(n=>!n.deleted), trash=notes.filter(n=>n.deleted);const autoLockText=settings.autoLock?`${settings.autoLock} ${t.autoLockMinutes}`:t.autoLockNever;$('#lockStatus').textContent=`${t.unlockStatus} · ${autoLockText}`;$('#countAll').textContent=alive.length;$('#countPinned').textContent=alive.filter(n=>n.pinned).length;$('#countRecent').textContent=alive.length;$('#countImages').textContent=alive.filter(n=>n.media?.images).length;$('#countLinks').textContent=alive.filter(n=>n.media?.links).length;$('#countTrash').textContent=trash.length;const titles={all:t.notesTitle,pinned:t.pinned.replace('📌 ',''),recent:t.recent.replace('🕘 ',''),images:t.images.replace('🖼️ ',''),links:t.links.replace('🔗 ',''),trash:t.trash.replace('🗑️ ','')};$('#listTitle').textContent=titles[filter];renderList();renderEditor()}
+function renderList(){const arr=filtered();notesEl.innerHTML=arr.length?arr.map(n=>`<article class="note ${n.id===currentNoteId?'active':''}" data-id="${n.id}"><h3>${n.pinned?'📌 ':''}${escapeHtml(n.title||t.newNoteTitle)}</h3><p>${escapeHtml((n.plain||'').slice(0,52))||t.newNoteContent.replace(/<[^>]*>/g,'').slice(0,30)}</p><div class="meta"><span>${timeLabel(n.updatedAt)}</span><span class="chips">${n.media?.images?'<b class="chip">🖼️</b>':''}${n.media?.links?'<b class="chip">🔗</b>':''}${n.media?.files?'<b class="chip">📎</b>':''}</span></div></article>`).join(''):`<div class="empty">${t.placeholder}</div>`}
 function note(){return notes.find(n=>n.id===currentNoteId)}
-function renderEditor(){const n=note();if(!n){editor.innerHTML='<div class="placeholder">没有选中的备忘录</div>';return}const trash=n.deleted;editor.innerHTML=`<div class="toolbar"><div class="tools">${trash?'<button class="tool" data-act="restore">恢复</button><button class="tool" data-act="permanent">永久删除</button>':`<button class="tool" data-cmd="bold">B</button><button class="tool" data-cmd="italic">I</button><button class="tool" data-cmd="strikeThrough">S</button><button class="tool" data-cmd="insertUnorderedList">• 列表</button><button class="tool" data-cmd="insertOrderedList">1. 列表</button><button class="tool" data-act="todo">☑︎</button><button class="tool" data-act="quote">引用</button><button class="tool" data-act="code">代码</button><button class="tool" data-act="image">🖼️</button><button class="tool" data-act="link">🔗</button><button class="tool" data-act="file">📎</button><button class="tool" data-act="pin">${n.pinned?'取消置顶':'置顶'}</button><button class="tool" data-act="delete">删除</button>`}</div><span class="save" id="saveState">已保存 · ${timeLabel(n.updatedAt)}</span></div><article class="content"><input class="title" id="noteTitle" value="${escapeHtml(n.title)}" ${trash?'disabled':''}/><div class="date">创建 ${timeLabel(n.createdAt)} · 更新 ${timeLabel(n.updatedAt)}</div><div class="body" id="noteBody" contenteditable="${!trash}">${n.html}</div></article>`}
+function renderEditor(){const n=note();if(!n){editor.innerHTML=`<div class="placeholder">${t.placeholder}</div>`;return}const trash=n.deleted;const restoreBtn=currentLang==='zh-CN'?'恢复':(currentLang==='zh-TW'?'恢復':(currentLang==='ja'?'復元':'Restore'));const permDelBtn=currentLang==='zh-CN'?'永久删除':(currentLang==='zh-TW'?'永久刪除':(currentLang==='ja'?'完全削除':'Delete Forever'));const unpinBtn=currentLang==='zh-CN'?'取消置顶':(currentLang==='zh-TW'?'取消置頂':(currentLang==='ja'?'ピン留め解除':'Unpin'));const pinBtn=currentLang==='zh-CN'?'置顶':(currentLang==='zh-TW'?'置頂':(currentLang==='ja'?'ピン留め':'Pin'));const deleteBtn=currentLang==='zh-CN'?'删除':(currentLang==='zh-TW'?'刪除':(currentLang==='ja'?'削除':'Delete'));const savedText=currentLang==='zh-CN'?'已保存':(currentLang==='zh-TW'?'已保存':(currentLang==='ja'?'保存済み':'Saved'));const createdText=currentLang==='zh-CN'?'创建':(currentLang==='zh-TW'?'創建':(currentLang==='ja'?'作成':'Created'));const updatedText=currentLang==='zh-CN'?'更新':(currentLang==='zh-TW'?'更新':(currentLang==='ja'?'更新':'Updated'));editor.innerHTML=`<div class="toolbar"><div class="tools">${trash?`<button class="tool" data-act="restore">${restoreBtn}</button><button class="tool" data-act="permanent">${permDelBtn}</button>`:`<button class="tool" data-cmd="bold">B</button><button class="tool" data-cmd="italic">I</button><button class="tool" data-cmd="strikeThrough">S</button><button class="tool" data-cmd="insertUnorderedList">• </button><button class="tool" data-cmd="insertOrderedList">1. </button><button class="tool" data-act="todo">☑︎</button><button class="tool" data-act="quote">"</button><button class="tool" data-act="code">&lt;/&gt;</button><button class="tool" data-act="image">🖼️</button><button class="tool" data-act="link">🔗</button><button class="tool" data-act="file">📎</button><button class="tool" data-act="pin">${n.pinned?unpinBtn:pinBtn}</button><button class="tool" data-act="delete">${deleteBtn}</button>`}</div><span class="save" id="saveState">${savedText} · ${timeLabel(n.updatedAt)}</span></div><article class="content"><input class="title" id="noteTitle" value="${escapeHtml(n.title)}" ${trash?'disabled':''}/><div class="date">${createdText} ${timeLabel(n.createdAt)} · ${updatedText} ${timeLabel(n.updatedAt)}</div><div class="body" id="noteBody" contenteditable="${!trash}">${n.html}</div></article>`}
 async function persistNote(n){const data=await api('/api/notes/'+n.id,{method:'PATCH',body:JSON.stringify(n)});Object.assign(n,data.note);renderList();const st=$('#saveState');if(st)st.textContent='已保存 · 刚刚'}
 function collectMedia(){const b=$('#noteBody');return{images:b.querySelectorAll('img').length,links:b.querySelectorAll('a,.link-card').length,files:b.querySelectorAll('.attach').length}}
 function debouncedSave(){const n=note();if(!n||n.deleted)return;n.title=$('#noteTitle').value||'新备忘录';n.html=$('#noteBody').innerHTML;n.plain=$('#noteBody').innerText;n.media=collectMedia();const st=$('#saveState');if(st)st.textContent='正在保存到数据库...';clearTimeout(saveTimer);saveTimer=setTimeout(()=>persistNote(n).catch(e=>msg('保存失败：'+e.message)),550)}
@@ -48,6 +337,7 @@ $('#editor').addEventListener('click',e=>{const b=e.target.closest('.tool');if(!
 $('#imageInput').onchange=e=>{[...e.target.files].forEach(file=>{const r=new FileReader();r.onload=()=>insertHtml(`<img src="${r.result}" alt="${escapeHtml(file.name)}"><div class="hint">${escapeHtml(file.name)}</div>`);r.readAsDataURL(file)});e.target.value=''};$('#fileInput').onchange=e=>{[...e.target.files].forEach(file=>insertHtml(`<div class="media-block attach"><div class="file">📎</div><div><b>${escapeHtml(file.name)}</b><br><small>${Math.round(file.size/1024)} KB · 文件元数据保存到数据库</small></div></div>`));e.target.value=''};
 $('#settingsBtn').onclick=()=>modal('保险箱设置','修改自动锁定时间。',`<select id="autoLockSelect"><option value="5">5 分钟</option><option value="15">15 分钟</option><option value="30">30 分钟</option><option value="0">永不</option></select>`,async()=>{settings.autoLock=Number($('#autoLockSelect').value)||0;await api('/api/vault/settings',{method:'PATCH',body:JSON.stringify({settings})});render();resetAutoLock();msg('设置已保存到数据库')});
 $('#exportBtn').onclick=async()=>{const data=await api('/api/export');const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='lockernote-export.json';a.click();URL.revokeObjectURL(a.href);msg('已导出数据库数据')};$('#deleteVaultBtn').onclick=()=>modal('删除保险箱','确认删除当前密码对应的所有数据库内容？','',async()=>{await api('/api/vault',{method:'DELETE'});await lock();msg('保险箱已删除')},true);$('#modal').onclick=e=>{if(e.target.id==='modal')$('#modal').classList.remove('show')};
+initI18n();
 if(token)loadNotes().then(()=>{entry.classList.add('hidden');resetAutoLock()}).catch(()=>lock());
 </script>
 </body>
